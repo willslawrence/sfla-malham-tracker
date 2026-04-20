@@ -100,11 +100,11 @@ def main():
             if name and style in style_colors:
                 not_approved = "NOT APPROVED" in name or "(Not approved)" in name
                 sc = style_colors[style]
-                # KML color is ABGR — convert to #RRGGBBAA
+                # KML color is AABBGGRR — convert to #RRGGBBAA
                 abgr = sc['color']
                 if len(abgr) == 8:
-                    a, b, g, r = abgr[0:2], abgr[2:4], abgr[4:6], abgr[6:8]
-                    hex_color = f'#{r}{g}{b}{a}'
+                    a, bb, gg, rr = abgr[0:2], abgr[2:4], abgr[4:6], abgr[6:8]
+                    hex_color = f'#{rr}{gg}{bb}{a}'
                 else:
                     hex_color = '#ffff00ff'
                 
