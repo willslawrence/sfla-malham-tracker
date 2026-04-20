@@ -601,12 +601,13 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
         
-        // Short name label at midpoint
+        // Short name label at midpoint — estimate size based on name length
         const shortName = route.name.replace(/:.*$/, '').trim();
-        const labelHtml = `<div class="route-label ${approved ? '' : 'unapproved'}">${shortName}${approved ? '' : ' ✗'}</div>`;
+        const labelHtml = `<div class="route-label ${approved ? '' : 'unapproved'}" style="display:inline-block;padding:3px 8px;white-space:nowrap;">${shortName}${approved ? '' : ' ✗'}</div>`;
+        const textLen = shortName.length * 7 + 24; // rough width estimate
         const midIdx = Math.floor(route.coords.length / 2);
         L.marker(route.coords[midIdx], {
-          icon: L.divIcon({ className: '', html: labelHtml, iconSize: null }),
+          icon: L.divIcon({ html: labelHtml, iconSize: [Math.min(textLen, 160), 22], iconAnchor: [Math.min(textLen/2, 80), 11] }),
           interactive: false
         }).addTo(routeLayerGroup);
         
