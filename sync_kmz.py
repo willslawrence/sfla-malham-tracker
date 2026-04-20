@@ -4,6 +4,7 @@ Sync all 3 SFLA KMZ files + Urban VFR Routes from OneDrive to shapes.js + routes
 """
 import re, zipfile, json, os, sys
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ONEDRIVE_BASE = "/Users/willy/Library/CloudStorage/OneDrive-TheHelicopterCompany/H125 Pilots - Documents/GPS and KMZ Resources/Riyadh UAM"
 
 KMZ_FILES = {
@@ -122,15 +123,17 @@ def main():
         print(f"⚠️  Routes file not found: {ROUTES_FILE}", file=sys.stderr)
     
     # Write shapes.js
-    with open('shapes.js', 'w') as f:
+    shapes_path = os.path.join(SCRIPT_DIR, 'shapes.js')
+    with open(shapes_path, 'w') as f:
         f.write(f"const SHAPES = {json.dumps(all_shapes)};\n")
         f.write(f"const GPS_POINTS = {json.dumps(all_gps)};\n")
-    print(f"✓ shapes.js: {len(all_shapes)} shapes written")
+    print(f"✓ shapes.js: {len(all_shapes)} shapes written ({os.path.getsize(shapes_path)} bytes)")
     
     # Write routes.js
-    with open('routes.js', 'w') as f:
+    routes_path = os.path.join(SCRIPT_DIR, 'routes.js')
+    with open(routes_path, 'w') as f:
         f.write(f"const ROUTES = {json.dumps(route_data)};\n")
-    print(f"✓ routes.js: {len(route_data)} routes written")
+    print(f"✓ routes.js: {len(route_data)} routes written ({os.path.getsize(routes_path)} bytes)")
 
 if __name__ == '__main__':
     main()
