@@ -100,10 +100,14 @@ def main():
             if name and style in style_colors:
                 not_approved = "NOT APPROVED" in name or "(Not approved)" in name
                 sc = style_colors[style]
-                # KML color is AABBGGRR — convert to #RRGGBBAA
+                # KML color is AABBGGRR (8 hex digits) — convert to CSS #RRGGBBAA
                 abgr = sc['color']
                 if len(abgr) == 8:
-                    a, bb, gg, rr = abgr[0:2], abgr[2:4], abgr[4:6], abgr[6:8]
+                    # String positions: 0-2=AA, 2-4=BB, 4-6=GG, 6-8=RR
+                    a = abgr[0:2]
+                    bb = abgr[2:4]  # B in KML (BB = blue)
+                    gg = abgr[4:6]   # G in KML
+                    rr = abgr[6:8]   # R in KML (RR = red)
                     hex_color = f'#{rr}{gg}{bb}{a}'
                 else:
                     hex_color = '#ffff00ff'
