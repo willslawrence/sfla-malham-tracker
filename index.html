@@ -403,6 +403,15 @@
     const AIRTABLE_CHANGELOG = 'Malham%20Change%20Log';
     const API_KEY = atob('cGF0TGJPcnd3cmptZTV2TjMuYWUxNjNlYmE5YjZkMzgyNzc0MjEzMTJmZGM1MzFhYjQ3M2U2MWQ4NDFlN2RlZGUzYmY1OTJiNDc1YThjMGE1NA==');
     
+    // DOM element refs — must be declared before any function that uses them
+    const infoPanel = document.getElementById('info-panel');
+    const radialMenu = document.getElementById('radial-menu');
+    const radialSuitable = document.getElementById('radialSuitable');
+    const radialUnsuitable = document.getElementById('radialUnsuitable');
+    const radialClose = document.getElementById('radialClose');
+    const lineSuitable = document.getElementById('lineSuitable');
+    const lineUnsuitable = document.getElementById('lineUnsuitable');
+    
     // Colors
     const COLORS = {
       suitable: '#22c55e',
@@ -741,7 +750,6 @@
     radialSuitable.addEventListener('click', () => { if (selectedShape) saveStatus('Suitable'); });
     radialUnsuitable.addEventListener('click', () => { if (selectedShape) saveStatus('Unsuitable'); });
     radialClose.addEventListener('click', closePanel);
-    map.on('click', closePanel);
     
     map.on('move', () => {
       if (selectedShape && radialMenu.classList.contains('active')) {
