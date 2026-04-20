@@ -100,14 +100,15 @@ def main():
             if name and style in style_colors:
                 not_approved = "NOT APPROVED" in name or "(Not approved)" in name
                 sc = style_colors[style]
-                # KML color is AABBGGRR (8 hex digits) — convert to CSS #RRGGBBAA
+                # KML color is AABBGGRR (8 hex digits like ff00ffff)
+                # String positions: 0-2=AA(alpha), 2-4=BB(blue), 4-6=GG(green), 6-8=RR(red)
+                # Convert to #RRGGBBAA for routes.js
                 abgr = sc['color']
                 if len(abgr) == 8:
-                    # String positions: 0-2=AA, 2-4=BB, 4-6=GG, 6-8=RR
-                    a = abgr[0:2]
-                    bb = abgr[2:4]  # B in KML (BB = blue)
-                    gg = abgr[4:6]   # G in KML
-                    rr = abgr[6:8]   # R in KML (RR = red)
+                    a = abgr[0:2]   # alpha
+                    bb = abgr[2:4]  # blue
+                    gg = abgr[4:6]   # green
+                    rr = abgr[6:8]   # red
                     hex_color = f'#{rr}{gg}{bb}{a}'
                 else:
                     hex_color = '#ffff00ff'
