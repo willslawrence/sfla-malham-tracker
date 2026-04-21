@@ -516,7 +516,7 @@
         } else {
           shapeLayerGroup.eachLayer(l => {
             if (l instanceof L.Polygon) {
-              const shape = polyShapeMap.get(l);
+              const shape = shapeByPolyId.get(l);
               if (shape && shape.source === area) {
                 checked ? shapeLayerGroup.addLayer(l) : shapeLayerGroup.removeLayer(l);
               }
@@ -657,6 +657,8 @@
     }
     
     // Render shapes
+    // shapeByPolyId persists across all shapes — must be declared OUTSIDE the forEach
+    const shapeByPolyId = new Map();
     function renderShapes() {
       SHAPES.forEach(shape => {
         const site = siteData[shape.name];
@@ -670,8 +672,7 @@
         const poly = L.polygon(shape.coords, {
           color: color, fillColor: color, fillOpacity: 0.4, weight: 5
         });
-        poly._shapeName = shape.name;
-        polyShapeMap.set(poly, shape);
+        shapeByPolyId.set(poly, shape);
         if (activeAreas[shape.source]) shapeLayerGroup.addLayer(poly);
         
         poly.on('click', (e) => { L.DomEvent.stopPropagation(e); showRadialMenu(shape, poly, e.latlng); });
