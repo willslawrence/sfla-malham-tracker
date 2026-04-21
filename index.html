@@ -595,9 +595,21 @@
       return `rgba(${red},${green},${blue},${alpha.toFixed(2)})`;
     }
     
+    // Build a lookup: short name (first word before ' - ') -> GPS point
+    function buildWaypointLookup() {
+      const lookup = {};
+      if (typeof GPS_POINTS === 'undefined') return lookup;
+      GPS_POINTS.forEach(pt => {
+        const short = pt.name.split(' - ')[0].trim();
+        lookup[short] = pt;
+      });
+      return lookup;
+    }
+
     // Render routes
     function renderRoutes() {
       if (typeof ROUTES === 'undefined') return;
+      const waypointLookup = buildWaypointLookup();
       routeLines = [];
       ROUTES.forEach((route, i) => {
         // Check approved flag AND name string for 'not approved'
@@ -605,6 +617,7 @@
         const approved = route.approved && !nameNotApproved;
         const lineColor = approved ? kmlColorToRgba(route.color) : 'rgba(255,255,255,0.7)';
         const dash = route.dashArray || (approved ? null : '5,5');
+        const labelFill = approved ? kmlColorToRgba(route.color) : 'rgba(255,255,255,0.85)';
 
         const line = L.polyline(route.coords, {
           color: lineColor,
@@ -612,27 +625,36 @@
           dashArray: dash,
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
-        
-        // Short name label at route MIDPOINT — circle marker + tooltip like GPS points
-        const shortName = route.name.replace(/:.*$/, '').trim();
-        const labelFill = approved ? kmlColorToRgba(route.color) : 'rgba(255,255,255,0.85)';
-        const midIdx = Math.floor(route.coords.length / 2);
-        const midCoord = route.coords[midIdx];
-        const routeLabel = L.circleMarker(midCoord, {
-          radius: 6,
-          fillColor: labelFill,
-          color: '#fff',
-          weight: 2,
-          fillOpacity: 0.9
-        }).addTo(routeLayerGroup);
-        routeLabel.bindTooltip(shortName, {
-          permanent: true,
-          direction: 'right',
-          offset: [8, 0],
-          className: 'gps-label',
-          opacity: 1
+
+        // Parse waypoint names from route name (between ': ' and end, split by ' - ')
+        const namePart = route.name.replace(/^[^:]+:\s*/, '').replace(/\s*\(.*?\)\s*/g, '').trim();
+        const rawWaypoints = namePart.split(/\s*-\s*/);
+        // Filter to only real waypoints that have GPS match and fit in coords array
+        const validWaypoints = rawWaypoints.filter(wp => {
+          const short = wp.trim();
+          return short && waypointLookup[short] && rawWaypoints.indexOf(wp) < route.coords.length;
         });
-        
+
+        validWaypoints.forEach((wp, idx) => {
+          const short = wp.trim();
+          const pt = waypointLookup[short]
+          if (!pt) return
+          const routeWpMarker = L.circleMarker([pt.lat, pt.lng], {
+            radius: 5,
+            fillColor: labelFill,
+            color: '#fff',
+            weight: 2,
+            fillOpacity: 0.9
+          }).addTo(routeLayerGroup)
+          routeWpMarker.bindTooltip(short, {
+            permanent: true,
+            direction: 'right',
+            offset: [8, 0],
+            className: 'gps-label',
+            opacity: 1
+          })
+        })
+
         // Popup with full details
         line.bindPopup(`<div class="popup-name">${route.name}</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${approved ? '#22c55e' : '#ef4444'};margin-bottom:8px;">${approved ? '✓ APPROVED' : '✗ NOT APPROVED'}</div><div style="font-size:12px;color:#aaa;">Solid = Approved · Dashed = Not Approved</div>`);
         routeLines.push(line);
