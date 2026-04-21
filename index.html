@@ -613,24 +613,25 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
         
-        // Short name label at route MIDPOINT — circular VRP-style badge
+        // Short name label at route MIDPOINT — circle marker + tooltip like GPS points
         const shortName = route.name.replace(/:.*$/, '').trim();
-        const rgbaColor = kmlColorToRgba(route.color);
-        const labelColor = approved ? rgbaColor : 'rgba(255,255,255,0.85)';
+        const labelFill = approved ? kmlColorToRgba(route.color) : 'rgba(255,255,255,0.85)';
         const midIdx = Math.floor(route.coords.length / 2);
         const midCoord = route.coords[midIdx];
-        // Circle marker styled like VRP points, with text label inside
-        const labelHtml = `<div class="route-label" style="background:${labelColor};border:2px solid #fff;">${shortName}</div>`;
-        L.marker(midCoord, {
-          icon: L.divIcon({
-            html: labelHtml,
-            className: '',
-            iconSize: [48, 48],
-            iconAnchor: [24, 24],
-            popupAnchor: [0, -24]
-          }),
-          interactive: false
+        const routeLabel = L.circleMarker(midCoord, {
+          radius: 6,
+          fillColor: labelFill,
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 0.9
         }).addTo(routeLayerGroup);
+        routeLabel.bindTooltip(shortName, {
+          permanent: true,
+          direction: 'right',
+          offset: [8, 0],
+          className: 'gps-label',
+          opacity: 1
+        });
         
         // Popup with full details
         line.bindPopup(`<div class="popup-name">${route.name}</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${approved ? '#22c55e' : '#ef4444'};margin-bottom:8px;">${approved ? '✓ APPROVED' : '✗ NOT APPROVED'}</div><div style="font-size:12px;color:#aaa;">Solid = Approved · Dashed = Not Approved</div>`);
