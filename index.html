@@ -310,7 +310,7 @@
     .shape-label { background: transparent; border: none; color: white; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; text-shadow: 0 1px 3px rgba(0,0,0,0.8), 0 0 2px rgba(0,0,0,0.9); white-space: nowrap; pointer-events: none; }
     
     /* Route labels — no background, pill inherits route color via inline style */
-    .route-label { background: transparent; border-radius: 10px; color: white; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 3px 8px; white-space: nowrap; pointer-events: none; }
+    .route-label { display: flex; align-items: center; justify-content: center; border-radius: 50%; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; pointer-events: none; box-sizing: border-box; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
     
     /* Location dot */
     .my-location { width: 16px; height: 16px; background: #3b82f6; border: 3px solid white; border-radius: 50%; box-shadow: 0 0 10px rgba(59,130,246,0.5); }
@@ -600,7 +600,9 @@
       if (typeof ROUTES === 'undefined') return;
       routeLines = [];
       ROUTES.forEach((route, i) => {
-        const approved = route.approved;
+        // Check approved flag AND name string for 'not approved'
+        const nameNotApproved = /not\s*approved/i.test(route.name);
+        const approved = route.approved && !nameNotApproved;
         const lineColor = approved ? kmlColorToRgba(route.color) : 'rgba(255,255,255,0.7)';
         const dash = route.dashArray || (approved ? null : '5,5');
 
@@ -611,14 +613,22 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
         
-        // Short name label at midpoint — estimate size based on name length
+        // Short name label at route MIDPOINT — circular VRP-style badge
         const shortName = route.name.replace(/:.*$/, '').trim();
         const rgbaColor = kmlColorToRgba(route.color);
-        const labelHtml = `<div class="route-label" style="background:${rgbaColor}">${shortName}${approved ? '' : ' ✗'}</div>`;
-        const textLen = shortName.length * 7 + 24;
-        const lastCoord = route.coords[route.coords.length - 1];
-        L.marker(lastCoord, {
-          icon: L.divIcon({ html: labelHtml, iconSize: [Math.min(textLen, 160), 22], iconAnchor: [Math.min(textLen/2, 80), 11] }),
+        const labelColor = approved ? rgbaColor : 'rgba(255,255,255,0.85)';
+        const midIdx = Math.floor(route.coords.length / 2);
+        const midCoord = route.coords[midIdx];
+        // Circle marker styled like VRP points, with text label inside
+        const labelHtml = `<div class="route-label" style="background:${labelColor};border:2px solid #fff;">${shortName}</div>`;
+        L.marker(midCoord, {
+          icon: L.divIcon({
+            html: labelHtml,
+            className: '',
+            iconSize: [48, 48],
+            iconAnchor: [24, 24],
+            popupAnchor: [0, -24]
+          }),
           interactive: false
         }).addTo(routeLayerGroup);
         
