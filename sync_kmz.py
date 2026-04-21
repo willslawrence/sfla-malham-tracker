@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sync all 3 SFLA KMZ files + Urban VFR Routes from OneDrive to shapes.js + routes.js
+Sync all 3 SFLA KMZ files + Urban VFR Routes + VRP files from OneDrive to shapes.js + routes.js
 """
 import re, zipfile, json, os, sys
 
@@ -13,6 +13,7 @@ KMZ_FILES = {
     "SFLA NAJD.kmz": "NAJD",
 }
 ROUTES_FILE = "Urban VFR Routes.kmz"
+VRP_FILES = ["VRPs & Waypoints.kmz", "NAJD VRPs.kmz"]
 
 def parse_kml(kml):
     placemarks = re.findall(r'<Placemark>(.*?)</Placemark>', kml, re.DOTALL)
@@ -57,7 +58,7 @@ def parse_kml(kml):
 def main():
     all_shapes = []
     all_gps = []
-    
+
     for fname, source_label in KMZ_FILES.items():
         path = os.path.join(ONEDRIVE_BASE, fname)
         if not os.path.exists(path):
@@ -71,7 +72,7 @@ def main():
             all_shapes.extend(sh)
             all_gps.extend(pt)
             print(f"✓ {source_label}: {len(sh)} shapes, {len(pt)} points")
-    
+
     # Routes
     routes_path = os.path.join(ONEDRIVE_BASE, ROUTES_FILE)
     route_data = []
@@ -79,8 +80,7 @@ def main():
         with zipfile.ZipFile(routes_path) as z:
             kml = z.read([n for n in z.namelist() if n.endswith('.kml')][0]).decode()
             sh, pt, rt = parse_kml(kml)
-        
-        # Get style colors from KML
+
         styles_raw = re.findall(r'<Style id="(style\d+)">(.*?)</Style>', kml, re.DOTALL)
         style_colors = {}
         for sid, body in styles_raw:
@@ -90,7 +90,7 @@ def main():
                 'color': color_m.group(1) if color_m else 'ffff00ff',
                 'width': int(width_m.group(1)) if width_m else 4
             }
-        
+
         placemarks = re.findall(r'<Placemark>(.*?)</Placemark>', kml, re.DOTALL)
         for p in placemarks:
             name_m = re.search(r'<name>(.*?)</name>', p)
@@ -101,18 +101,17 @@ def main():
                 not_approved = "NOT APPROVED" in name or "(Not approved)" in name
                 sc = style_colors[style]
                 # KML color is AABBGGRR (8 hex digits, no # prefix)
-                # String positions: 0-2=AA(alpha), 2-4=BB(blue), 4-6=GG(green), 6-8=RR(red)
-                # Convert to #RRGGBBAA (with # prefix) for routes.js
+                # Convert to #RRGGBBAA for routes.js
                 abgr = sc['color']
                 if len(abgr) == 8:
-                    a = abgr[0:2]   # alpha
-                    bb = abgr[2:4]  # blue
-                    gg = abgr[4:6]   # green
-                    rr = abgr[6:8]   # red
+                    a = abgr[0:2]
+                    bb = abgr[2:4]
+                    gg = abgr[4:6]
+                    rr = abgr[6:8]
                     hex_color = f'#{rr}{gg}{bb}{a}'
                 else:
                     hex_color = '#ffff00ff'
-                
+
                 rt_match = next((r for r in rt if r['name'] == name), None)
                 if rt_match:
                     route_data.append({
@@ -123,22 +122,44 @@ def main():
                         "dashArray": '5,5' if not_approved else None,
                         "coords": rt_match['coords']
                     })
-        print(f"✓ Routes: {len(route_data)} ({(sum(1 for r in route_data if not r['approved']))} not approved)")
+        print(f"✓ Routes: {len(route_data)} ({sum(1 for r in route_data if not r['approved'])} not approved)")
     else:
         print(f"⚠️  Routes file not found: {ROUTES_FILE}", file=sys.stderr)
-    
+
+    # VRP / waypoint files
+    all_vrp = []
+    for vrp_fname in VRP_FILES:
+        vrp_path = os.path.join(ONEDRIVE_BASE, vrp_fname)
+        if not os.path.exists(vrp_path):
+            print(f"⚠️  VRP file not found: {vrp_fname}", file=sys.stderr)
+            continue
+        with zipfile.ZipFile(vrp_path) as z:
+            kml = z.read([n for n in z.namelist() if n.endswith('.kml')][0]).decode()
+            sh, pt, rt = parse_kml(kml)
+        all_vrp.extend(pt)
+        print(f"✓ {vrp_fname}: {len(pt)} VRP points")
+
+    # Deduplicate by name
+    seen_vrp = set()
+    all_vrp_deduped = []
+    for p in all_vrp:
+        if p['name'] not in seen_vrp:
+            seen_vrp.add(p['name'])
+            all_vrp_deduped.append(p)
+    print(f"✓ VRP total (deduped): {len(all_vrp_deduped)}")
+
     # Write shapes.js
     shapes_path = os.path.join(SCRIPT_DIR, 'shapes.js')
     with open(shapes_path, 'w') as f:
         f.write(f"const SHAPES = {json.dumps(all_shapes)};\n")
-        f.write(f"const GPS_POINTS = {json.dumps(all_gps)};\n")
     print(f"✓ shapes.js: {len(all_shapes)} shapes written ({os.path.getsize(shapes_path)} bytes)")
-    
+
     # Write routes.js
     routes_path = os.path.join(SCRIPT_DIR, 'routes.js')
     with open(routes_path, 'w') as f:
         f.write(f"const ROUTES = {json.dumps(route_data)};\n")
-    print(f"✓ routes.js: {len(route_data)} routes written ({os.path.getsize(routes_path)} bytes)")
+        f.write(f"const GPS_POINTS = {json.dumps(all_vrp_deduped)};\n")
+    print(f"✓ routes.js: {len(route_data)} routes + {len(all_vrp_deduped)} VRP points ({os.path.getsize(routes_path)} bytes)")
 
 if __name__ == '__main__':
     main()
