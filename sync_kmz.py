@@ -155,15 +155,6 @@ def main():
 
         for s in sh:
             s["source"] = source_label
-            style_id = style_lookup.get(s["name"], "")
-            color = get_shape_color(style_id, style_map)
-            if color:
-                s["kml_color"] = color
-            elif source_label == "Malham":
-                # Malham shapes: use standard SFLA green as fallback
-                s["kml_color"] = kml_color_to_hex(MALHAM_FALLBACK_COLOR)
-            # If Riyadh/NAJD with no color: leave kml_color unset (render uses Airtable status)
-
         all_shapes.extend(sh)
         all_gps.extend(pt)
         print(f"✓ {source_label}: {len(sh)} shapes, {len(pt)} points")
