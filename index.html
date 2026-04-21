@@ -626,20 +626,16 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
 
-        // Place label at midpoint between each consecutive pair of route coords
-        // Use the GPS point name for the starting coord of each segment
+        // Parse waypoint names from the route name string to label each segment
+        const namePart = route.name.replace(/^[^:]+:\s*/, '').replace(/\s*\(.*?\)\s*/g, '').trim();
+        const waypointNames = namePart.split(/\s*-\s*/).map(w => w.trim()).filter(w => w);
+        // For each segment (between consecutive coords), place label at midpoint
         route.coords.forEach((coord, idx) => {
-          if (idx >= route.coords.length - 1) return; // no midpoint after last point
+          if (idx >= route.coords.length - 1 || idx >= waypointNames.length) return;
           const nextCoord = route.coords[idx + 1];
           const midLat = (coord[0] + nextCoord[0]) / 2;
           const midLng = (coord[1] + nextCoord[1]) / 2;
-          // Find the GPS point name closest to this coord (within 0.001 degrees)
-          let labelText = '';
-          let minDist = 0.001;
-          GPS_POINTS.forEach(pt => {
-            const d = Math.abs(pt.lat - coord[0]) + Math.abs(pt.lng - coord[1]);
-            if (d < minDist) { minDist = d; labelText = pt.name.split(' - ')[0]; }
-          });
+          const labelText = waypointNames[idx]; // label = name of waypoint AT START of segment
           if (!labelText) return;
           const routeWpMarker = L.circleMarker([midLat, midLng], {
             radius: 4,
