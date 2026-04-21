@@ -626,31 +626,23 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
 
-        // Parse waypoint names from the route name string to label each segment
-        const namePart = route.name.replace(/^[^:]+:\s*/, '').replace(/\s*\(.*?\)\s*/g, '').trim();
-        const waypointNames = namePart.split(/\s*-\s*/).map(w => w.trim()).filter(w => w);
-        // For each segment (between consecutive coords), place label at midpoint
-        route.coords.forEach((coord, idx) => {
-          if (idx >= route.coords.length - 1 || idx >= waypointNames.length) return;
-          const nextCoord = route.coords[idx + 1];
-          const midLat = (coord[0] + nextCoord[0]) / 2;
-          const midLng = (coord[1] + nextCoord[1]) / 2;
-          const labelText = waypointNames[idx]; // label = name of waypoint AT START of segment
-          if (!labelText) return;
-          const routeWpMarker = L.circleMarker([midLat, midLng], {
-            radius: 4,
-            fillColor: labelFill,
-            color: '#fff',
-            weight: 1.5,
-            fillOpacity: 0.9
-          }).addTo(routeLayerGroup)
-          routeWpMarker.bindTooltip(labelText, {
-            permanent: true,
-            direction: 'right',
-            offset: [8, 0],
-            className: 'gps-label',
-            opacity: 1
-          })
+        // ONE label at route MIDPOINT — short route name, circle badge matching route color
+        const shortName = route.name.replace(/:.*$/, '').trim();
+        const midIdx = Math.floor(route.coords.length / 2);
+        const midCoord = route.coords[midIdx];
+        const routeMidMarker = L.circleMarker(midCoord, {
+          radius: 6,
+          fillColor: labelFill,
+          color: '#fff',
+          weight: 2,
+          fillOpacity: 0.9
+        }).addTo(routeLayerGroup)
+        routeMidMarker.bindTooltip(shortName, {
+          permanent: true,
+          direction: 'right',
+          offset: [8, 0],
+          className: 'gps-label',
+          opacity: 1
         })
 
         // Popup with full details
