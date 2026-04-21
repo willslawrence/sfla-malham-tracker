@@ -36,7 +36,8 @@ def parse_kml(kml):
                         "name": name,
                         "coords": coords,
                         "center": [round(sum(lats)/len(lats), 6), round(sum(lngs)/len(lngs), 6)],
-                        "source": ""
+                        "source": "",
+                        "_coordCount": len(coords)  # temp field for deduplication
                     })
         elif '<Point>' in p:
             coords_raw = re.search(r'<coordinates>(.*?)</coordinates>', p, re.DOTALL)
@@ -55,6 +56,24 @@ def parse_kml(kml):
                 routes.append({"name": name, "coords": coords})
     return shapes, points, routes
 
+def deduplicate_shapes(shapes):
+    # Keep first shape for each unique name (avoids dict key collision)
+    # For shapes with duplicate names, keep the one with more coordinates
+    seen = {}
+    result = []
+    for s in shapes:
+        if s['name'] not in seen:
+            seen[s['name']] = s
+            result.append(s)
+        else:
+            # If duplicate name, keep the one with more coordinate points
+            if s['_coordCount'] > seen[s['name']]['_coordCount']:
+                seen[s['name']] = s
+    # Remove temp field
+    for s in result:
+        del s['_coordCount']
+    return result
+
 def main():
     all_shapes = []
     all_gps = []
@@ -72,6 +91,10 @@ def main():
             all_shapes.extend(sh)
             all_gps.extend(pt)
             print(f"✓ {source_label}: {len(sh)} shapes, {len(pt)} points")
+    
+    # Deduplicate shapes — KMZ may have duplicate names (e.g. N38)
+    all_shapes = deduplicate_shapes(all_shapes)
+    print(f"✓ After deduplication: {len(all_shapes)} shapes")
 
     # Routes
     routes_path = os.path.join(ONEDRIVE_BASE, ROUTES_FILE)

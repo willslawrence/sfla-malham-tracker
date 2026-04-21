@@ -514,12 +514,12 @@
           }
           document.getElementById('route-banner').classList.toggle('active', checked && routeLines.length > 0);
         } else {
-          // Toggle ALL shapes matching this area by filtering shapeLayerGroup layers
           shapeLayerGroup.eachLayer(l => {
-            // l.options._shapes is an array of shapes for this polygon
-            const shapes = l.options._shapes;
-            if (shapes && shapes.some(s => s.source === area)) {
-              checked ? shapeLayerGroup.addLayer(l) : shapeLayerGroup.removeLayer(l);
+            if (l instanceof L.Polygon) {
+              const shape = polyShapeMap.get(l);
+              if (shape && shape.source === area) {
+                checked ? shapeLayerGroup.addLayer(l) : shapeLayerGroup.removeLayer(l);
+              }
             }
           });
         }
@@ -664,10 +664,14 @@
         const lastChecked = site?.fields?.LastChecked;
         const color = getShapeColor(status, lastChecked);
         
+        // Use a WeakMap to associate polygons with their shapes (Leaflet strips unknown options)
+        const polyShapeMap = new WeakMap();
+        
         const poly = L.polygon(shape.coords, {
-          color: color, fillColor: color, fillOpacity: 0.4, weight: 5,
-          _shapes: [shape]
+          color: color, fillColor: color, fillOpacity: 0.4, weight: 5
         });
+        poly._shapeName = shape.name;
+        polyShapeMap.set(poly, shape);
         if (activeAreas[shape.source]) shapeLayerGroup.addLayer(poly);
         
         poly.on('click', (e) => { L.DomEvent.stopPropagation(e); showRadialMenu(shape, poly, e.latlng); });
