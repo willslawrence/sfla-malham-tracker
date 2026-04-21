@@ -433,19 +433,18 @@
       return Math.floor((new Date() - new Date(dateStr)) / (1000 * 60 * 60 * 24));
     }
     
-    function getShapeColor(status, lastChecked, source) {
+    function getShapeColor(status, lastChecked, source, kmlColor) {
       if (status === 'Unsuitable') return COLORS.unsuitable;
-      if (status === 'Pending' || status === 'New SFLA' || !status || status === 'Unknown') {
-        // Malham shapes always default to green regardless of status
-        if (source === 'Malham') return COLORS.suitable;
-        return COLORS.pending;
-      }
       if (status === 'Suitable') {
         const d = daysSince(lastChecked);
         if (d >= 28) return COLORS.suitableOld;
         if (d >= 21) return COLORS.suitableStale;
         return COLORS.suitable;
       }
+      // Pending, New SFLA, Unknown, or no Airtable status — use KMZ color if available
+      if (kmlColor) return kmlColor;
+      // Fallback defaults
+      if (source === 'Malham') return COLORS.suitable;
       return COLORS.pending;
     }
     
@@ -691,7 +690,7 @@
         const site = siteData[shape.name];
         const status = site?.fields?.Status || 'Pending';
         const lastChecked = site?.fields?.LastChecked;
-        const color = getShapeColor(status, lastChecked, shape.source);
+        const color = getShapeColor(status, lastChecked, shape.source, shape.kml_color);
         
         // Use a WeakMap to associate polygons with their shapes (Leaflet strips unknown options)
         const polyShapeMap = new WeakMap();
@@ -713,9 +712,9 @@
       });
     }
     
-    function updateShapeColor(name, status, lastChecked, source) {
+    function updateShapeColor(name, status, lastChecked, source, kmlColor) {
       const poly = polygons[name];
-      if (poly) poly.setStyle({ color: getShapeColor(status, lastChecked, source), fillColor: getShapeColor(status, lastChecked, source) });
+      if (poly) poly.setStyle({ color: getShapeColor(status, lastChecked, source, kmlColor), fillColor: getShapeColor(status, lastChecked, source, kmlColor) });
     }
     
     function drawLine(lineEl, x1, y1, x2, y2) {
@@ -825,7 +824,7 @@
         if (!resp.ok) throw new Error('Save failed');
         const updated = await resp.json();
         siteData[name] = updated;
-        updateShapeColor(name, status, today, selectedShape.source);
+        updateShapeColor(name, status, today, selectedShape.source, selectedShape.kml_color);
         if (previousStatus !== status) logChange(name, previousStatus, status, notes);
         closePanel();
       } catch (err) { console.error('Save error:', err); alert('Failed to save. Try again.'); }
