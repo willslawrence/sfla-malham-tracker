@@ -57,18 +57,17 @@ def parse_kml(kml):
     return shapes, points, routes
 
 def deduplicate_shapes(shapes):
-    # Keep first shape for each unique name (avoids dict key collision)
-    # For shapes with duplicate names, keep the one with more coordinates
-    seen = {}
+    # Keep the shape with most coordinates for each unique name
+    seen = {}  # name -> index in result
     result = []
     for s in shapes:
         if s['name'] not in seen:
-            seen[s['name']] = s
+            seen[s['name']] = len(result)
             result.append(s)
         else:
             # If duplicate name, keep the one with more coordinate points
-            if s['_coordCount'] > seen[s['name']]['_coordCount']:
-                seen[s['name']] = s
+            if s['_coordCount'] > result[seen[s['name']]]['_coordCount']:
+                result[seen[s['name']]] = s
     # Remove temp field
     for s in result:
         del s['_coordCount']
