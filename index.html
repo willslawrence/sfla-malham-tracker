@@ -626,27 +626,29 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
 
-        // Parse waypoint names from route name (between ': ' and end, split by ' - ')
-        const namePart = route.name.replace(/^[^:]+:\s*/, '').replace(/\s*\(.*?\)\s*/g, '').trim();
-        const rawWaypoints = namePart.split(/\s*-\s*/);
-        // Filter to only real waypoints that have GPS match and fit in coords array
-        const validWaypoints = rawWaypoints.filter(wp => {
-          const short = wp.trim();
-          return short && waypointLookup[short] && rawWaypoints.indexOf(wp) < route.coords.length;
-        });
-
-        validWaypoints.forEach((wp, idx) => {
-          const short = wp.trim();
-          const pt = waypointLookup[short]
-          if (!pt) return
-          const routeWpMarker = L.circleMarker([pt.lat, pt.lng], {
-            radius: 5,
+        // Place label at midpoint between each consecutive pair of route coords
+        // Use the GPS point name for the starting coord of each segment
+        route.coords.forEach((coord, idx) => {
+          if (idx >= route.coords.length - 1) return; // no midpoint after last point
+          const nextCoord = route.coords[idx + 1];
+          const midLat = (coord[0] + nextCoord[0]) / 2;
+          const midLng = (coord[1] + nextCoord[1]) / 2;
+          // Find the GPS point name closest to this coord (within 0.001 degrees)
+          let labelText = '';
+          let minDist = 0.001;
+          GPS_POINTS.forEach(pt => {
+            const d = Math.abs(pt.lat - coord[0]) + Math.abs(pt.lng - coord[1]);
+            if (d < minDist) { minDist = d; labelText = pt.name.split(' - ')[0]; }
+          });
+          if (!labelText) return;
+          const routeWpMarker = L.circleMarker([midLat, midLng], {
+            radius: 4,
             fillColor: labelFill,
             color: '#fff',
-            weight: 2,
+            weight: 1.5,
             fillOpacity: 0.9
           }).addTo(routeLayerGroup)
-          routeWpMarker.bindTooltip(short, {
+          routeWpMarker.bindTooltip(labelText, {
             permanent: true,
             direction: 'right',
             offset: [8, 0],
