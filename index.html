@@ -614,9 +614,9 @@
         const shortName = route.name.replace(/:.*$/, '').trim();
         const rgbaColor = kmlColorToRgba(route.color);
         const labelHtml = `<div class="route-label" style="background:${rgbaColor}">${shortName}${approved ? '' : ' ✗'}</div>`;
-        const textLen = shortName.length * 7 + 24; // rough width estimate
-        const midIdx = Math.floor(route.coords.length / 2);
-        L.marker(route.coords[midIdx], {
+        const textLen = shortName.length * 7 + 24;
+        const lastCoord = route.coords[route.coords.length - 1];
+        L.marker(lastCoord, {
           icon: L.divIcon({ html: labelHtml, iconSize: [Math.min(textLen, 160), 22], iconAnchor: [Math.min(textLen/2, 80), 11] }),
           interactive: false
         }).addTo(routeLayerGroup);
