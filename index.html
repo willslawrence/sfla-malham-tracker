@@ -514,11 +514,12 @@
           }
           document.getElementById('route-banner').classList.toggle('active', checked && routeLines.length > 0);
         } else {
-          Object.entries(polygons).forEach(([name, poly]) => {
-            const shape = SHAPES.find(s => s.name === name);
-            if (shape && shape.source === area) {
-              if (checked) { shapeLayerGroup.addLayer(poly); shapeLayerGroup.addLayer(labels[name]); }
-              else { shapeLayerGroup.removeLayer(poly); shapeLayerGroup.removeLayer(labels[name]); }
+          // Toggle ALL shapes matching this area by filtering shapeLayerGroup layers
+          shapeLayerGroup.eachLayer(l => {
+            // l.options._shapes is an array of shapes for this polygon
+            const shapes = l.options._shapes;
+            if (shapes && shapes.some(s => s.source === area)) {
+              checked ? shapeLayerGroup.addLayer(l) : shapeLayerGroup.removeLayer(l);
             }
           });
         }
@@ -664,7 +665,8 @@
         const color = getShapeColor(status, lastChecked);
         
         const poly = L.polygon(shape.coords, {
-          color: color, fillColor: color, fillOpacity: 0.4, weight: 5
+          color: color, fillColor: color, fillOpacity: 0.4, weight: 5,
+          _shapes: [shape]
         });
         if (activeAreas[shape.source]) shapeLayerGroup.addLayer(poly);
         
