@@ -629,24 +629,35 @@
           opacity: approved ? 0.9 : 0.7
         }).addTo(routeLayerGroup);
 
-        // ONE label at route MIDPOINT — short route name, circle badge matching route color
+        // MULTIPLE labels along the route — at regular intervals
         const shortName = route.name.replace(/:.*$/, '').trim();
-        const midIdx = Math.floor(route.coords.length / 2);
-        const midCoord = route.coords[midIdx];
-        const routeMidMarker = L.circleMarker(midCoord, {
-          radius: 6,
-          fillColor: labelFill,
-          color: '#fff',
-          weight: 2,
-          fillOpacity: 0.9
-        }).addTo(routeLayerGroup)
-        routeMidMarker.bindTooltip(shortName, {
-          permanent: true,
-          direction: 'right',
-          offset: [8, 0],
-          className: 'gps-label',
-          opacity: 1
-        })
+        const nCoords = route.coords.length;
+        // Decide how many labels: 1 for short, 2 for medium, 3 for long routes
+        let labelIndices;
+        if (nCoords <= 3) {
+          labelIndices = [Math.floor(nCoords / 2)];  // 1 label at midpoint
+        } else if (nCoords <= 6) {
+          labelIndices = [Math.floor(nCoords * 0.3), Math.floor(nCoords * 0.7)];  // 2 labels
+        } else {
+          labelIndices = [Math.floor(nCoords * 0.2), Math.floor(nCoords * 0.5), Math.floor(nCoords * 0.8)];  // 3 labels
+        }
+        labelIndices.forEach(idx => {
+          const coord = route.coords[idx];
+          const labelMarker = L.circleMarker(coord, {
+            radius: 5,
+            fillColor: labelFill,
+            color: '#fff',
+            weight: 1.5,
+            fillOpacity: 0.85
+          }).addTo(routeLayerGroup);
+          labelMarker.bindTooltip(shortName, {
+            permanent: true,
+            direction: 'right',
+            offset: [6, 0],
+            className: 'gps-label',
+            opacity: 1
+          });
+        });
 
         // Popup with full details
         line.bindPopup(`<div class="popup-name">${route.name}</div><div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:${approved ? '#22c55e' : '#ef4444'};margin-bottom:8px;">${approved ? '✓ APPROVED' : '✗ NOT APPROVED'}</div><div style="font-size:12px;color:#aaa;">Solid = Approved · Dashed = Not Approved</div>`);
