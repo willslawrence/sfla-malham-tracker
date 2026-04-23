@@ -159,6 +159,22 @@ def main():
         all_gps.extend(pt)
         print(f"✓ {source_label}: {len(sh)} shapes, {len(pt)} points")
 
+    # Rename "Shape SFLA N" -> M### using lowest available numbers
+    used_m_nums = sorted(set(int(s["name"][1:]) for s in all_shapes if s["name"].startswith("M") and s["name"][1:].isdigit()))
+    available = sorted(set(range(1, 1000)) - set(used_m_nums))
+    rename_count = 0
+    for s in all_shapes:
+        if s["name"].startswith("Shape SFLA "):
+            try:
+                num = int(s["name"].replace("Shape SFLA ", ""))
+                if available:
+                    new_num = available.pop(0)
+                    s["name"] = f"M{new_num}"
+                    rename_count += 1
+            except ValueError:
+                pass
+    print(f"✓ Renamed {rename_count} 'Shape SFLA' shapes to M###")
+
     all_shapes = deduplicate_shapes(all_shapes)
     print(f"✓ After deduplication: {len(all_shapes)} shapes")
 
