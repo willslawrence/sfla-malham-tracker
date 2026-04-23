@@ -503,10 +503,11 @@
         e.preventDefault(); // Prevent browser's automatic checkbox toggle
         const area = toggle.dataset.area;
         const checkbox = toggle.querySelector('input');
-        const checked = !checkbox.checked; // Invert since we prevented default
+        // Toggle native checkbox.checked before reading
+        checkbox.checked = !checkbox.checked;
+        const checked = checkbox.checked;
         
         toggle.classList.toggle('active', checked);
-        checkbox.checked = checked;
         activeAreas[area] = checked;
         
         if (area === 'routes') {
